@@ -1,0 +1,22 @@
+<html>
+<head>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <button class = "boom">BOOM</button>
+  <script>
+    $(document).ready(function(){
+      $('.boom').on('click',function(){
+        socket.emit('boom');
+      });
+    });
+    var socket = io.connect('http://localhost:3000');
+    socket.on('bam', function (data) {
+      $(document.body).append(data.hell);
+    });
+    socket.on('newConnect', function(data){
+      console.log(data);
+    })
+  </script>
+</body>
