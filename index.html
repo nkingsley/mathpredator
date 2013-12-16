@@ -8,16 +8,20 @@
   <script>
     $(document).ready(function(){
       $('.boom').on('click',function(){
-        socket.emit('boom',{id:id});
+        socket.emit('boom',{id:id,team:team,otherTeam:otherTeam});
       });
     });
     var teams;
+    var team;
+    var otherTeam;
     var socket = io.connect('/');
     var id;
     socket.on('initialize', function(data){
-      id = data;
+      id = data.id;
+      team = data.team;
+      otherTeam = data.otherTeam;
     })
-    socket.on('bam', function (data) {
+    socket.on('safe', function (data) {
       $(document.body).append(data);
     });
     socket.on('newConnect', function(data){
