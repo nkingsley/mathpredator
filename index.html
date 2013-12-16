@@ -8,15 +8,23 @@
   <script>
     $(document).ready(function(){
       $('.boom').on('click',function(){
-        socket.emit('boom');
+        socket.emit('boom',{id:id});
       });
     });
+    var teams;
     var socket = io.connect('/');
+    var id;
+    socket.on('initialize', function(data){
+      id = data;
+    })
     socket.on('bam', function (data) {
-      $(document.body).append(data.hell);
+      $(document.body).append(data);
     });
     socket.on('newConnect', function(data){
-      console.log(data);
-    })
+      teams = data;
+    });
+    socket.on('gameOver', function(data){
+      $(document.body).append(data);
+    });
   </script>
 </body>
