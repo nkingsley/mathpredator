@@ -4,11 +4,19 @@
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <button class = "boom">BOOM</button>
+  <input type = "text" class = "answer" /><button class = "boom">Submit Answer</button>
   <script>
     $(document).ready(function(){
       $('.boom').on('click',function(){
-        socket.emit('boom',{id:id,team:team,otherTeam:otherTeam});
+        var answer = {
+          id:id,
+          team:team,
+          otherTeam:otherTeam,
+          answer: $('.answer').val(),
+          answerId: problem.id
+        };
+        console.log(answer);
+        socket.emit('submitAnswer',answer);
       });
     });
     var teams;
@@ -16,6 +24,7 @@
     var otherTeam;
     var socket = io.connect('/');
     var id;
+    var problem;
     socket.on('initialize', function(data){
       id = data.id;
       team = data.team;
@@ -29,6 +38,25 @@
     });
     socket.on('gameOver', function(data){
       $(document.body).append(data);
+    });
+    socket.on('newProb', function(data){
+      $(document.body).append(data.problem);
+      problem = data;
+    });
+    socket.on('youwerebitten', function(data){
+      $(document.body).append('youwerebitten' + data);
+    });
+    socket.on('newRound', function(){
+      $(document.body).append('newRound');
+    });
+    socket.on('wrong', function(data){
+      $(document.body).append('wrong');
+    });
+    socket.on('safe', function(data){
+      $(document.body).append('safe -> ' + data);
+    });
+    socket.on('youaresafe', function(){
+      $(document.body).append('youaresafe');
     });
   </script>
 </body>
