@@ -4,6 +4,7 @@
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+  <div class ="messageSpace"></div>
   <div class = "probSpace"></div>
   <input type = "text" class = "answer" />
   <button class = "boom">Submit Answer</button>
@@ -20,6 +21,7 @@
           hit: idToBite
         };
         socket.emit('submitAnswer',answer);
+        $('.answer').val('');
       });
     });
     var bitten = false;
@@ -40,12 +42,14 @@
     });
     socket.on('disconnect',function(data){
       teams = [data[0],data[1]];
-      console.log(players);
       delete players[data[2].id];
-      console.log(players);
       renderPlayers(); 
     });
     socket.on('safe', function (data) {
+      if (id === data){
+        $('.messageSpace').text('Correct!  Pick Someone To attack.');
+        $('.probSpace').text('');
+      }
       players[data].safe = true;
       players[data].level++;
       renderPlayers();
@@ -56,9 +60,10 @@
       renderPlayers();
     });
     socket.on('gameOver', function(data){
-      $('.probSpace').text(data);
+      $('.messageSpace').text(data);
     });
     socket.on('newProb', function(data){
+      $('.messageSpace').text('Go!');
       $('.probSpace').text(data.problem);
       problem = data;
     });
@@ -73,15 +78,28 @@
     });
     socket.on('youwerebitten', function(data){
       bitten = true;
-      $(document.body).append('youwerebitten' + data);
+      $('.messageSpace').text('you were bitten by ' + data + '.  Get revenge soon!');
+      $('.probSpace').fadeOut('fast');
+      $('input').fadeOut('fast');
+      $('button').fadeOut('fast');
     });
-    socket.on('newRound', function(){
+    socket.on('newRound', function(data){
       bitten = false;
-      $('.probSpace').text('');
+      $('.probSpace').fadeIn('fast');
+      $('.messageSpace').text('');
+      $('input').fadeIn('fast');
+      $('button').fadeIn('fast');
+      $('.probSpace').text('New Round!');
+      teams = [data[0],data[1]];
+      players = data[2];
       renderPlayers();
     });
     socket.on('wrong', function(data){
       $('.messageSpace').text('wrong');
+    });
+    socket.on('attackedSafePlayer', function(data){
+      $('input').text(data.answer);
+      $('messageSpace').text('rats... they\'re safe.  Pick someone else.');
     });
     var renderPlayers = function(){
       $('.players').html('');
@@ -94,6 +112,7 @@
         $('.players').append('<button data-id ="' + players[pid].id + '" ' + isOn + '>' + players[pid].id + '</button>');
       }
       $('.players').children().on('click',function(){
+        $('.messageSpace').text('');
         socket.emit('attack',{id:id,attack:$(this).attr('data-id')});
         idToBite = $(this).attr('data-id');
       });

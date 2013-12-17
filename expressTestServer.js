@@ -32,6 +32,7 @@ var Team = function(id){
   this.score = 0;
   this.id = id;
   this.safePlayers = 0;
+  this.size = 0;
 };
 var teams = [new Team(0), new Team(1)];
 var players = {};
@@ -43,8 +44,8 @@ app.get('/', function (req, res) {
 
 io.sockets.on('connection', function (socket) {
   socket.on('disconnect', function(){
-    console.log('ID IS _____>>>>>' + socket.name);
     var team = players[socket.name].team;
+    teams[team].size--;
     delete teams[team].players[socket.name];
     io.sockets.emit('disconnect', [teams[0],teams[1],players[socket.name]]);
     delete players[socket.name];
@@ -54,8 +55,7 @@ io.sockets.on('connection', function (socket) {
   players[id] = new Player(id);
   var team;
   var otherTeam;
-  //2 team only solution :(
-	if (teams[1].players.length > teams[0].players.length){
+	if (teams[1].size > teams[0].size){
 	  team = teams[0].id;
     teams[0].players[id] = id;
     otherTeam = teams[1].id;
@@ -67,6 +67,7 @@ io.sockets.on('connection', function (socket) {
   players[id].team = team;
   socket.emit('initialize', {id:id,team:team,otherTeam:otherTeam,players:players});
   socket.join('team' + team);
+  teams[team].size++;
   //let all players have the current team status and new player object
 	io.sockets.emit('newConnect', [teams[0],teams[1],players[id]] );
   if (game){
@@ -77,6 +78,11 @@ io.sockets.on('connection', function (socket) {
     newRound();
   }
   socket.on('submitAnswer', function (data) {
+    if (data.hit && players[data.hit].safe === true){
+      //build out client support
+      socket.emit('attackedSafePlayer', [data.answer,data.answerId]);
+      return;
+    }
     if (data.answer && parseInt(data.answer) === parseInt(answers[data.answerId])){
       delete answers[data.answerId];
       players[data.id].level++;
@@ -124,10 +130,13 @@ io.sockets.on('connection', function (socket) {
 });
 
 var newRound = function(){
-  io.sockets.emit('newRound',[teams[0],teams[1],players]);
   for (var id in players){
-    console.log('sending problem to->' + id);
     players[id].safe = false;
-    io.sockets.in(id).emit('newProb', getProblem(players[id].level));
   }
+  io.sockets.emit('newRound',[teams[0],teams[1],players]);
+  setTimeout(function(){
+    for (var id in players){
+      io.sockets.in(id).emit('newProb', getProblem(players[id].level));
+    }
+  }, 2000);
 }
