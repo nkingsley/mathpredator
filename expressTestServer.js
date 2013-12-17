@@ -1,6 +1,13 @@
-var app = require('express')()
+var express = require('express');
+var app = express()
   , server = require('http').createServer(app)
   , io = require('socket.io').listen(server);
+
+app.get('/', function (req, res) {
+  res.sendfile(__dirname + '/public/index.html');
+});
+app.use(express.static(__dirname + '/public'));
+
 var id = 1;
 var boom = 0;
 var answers = {};
@@ -38,9 +45,6 @@ var teams = [new Team(0), new Team(1)];
 var players = {};
 server.listen(process.env.PORT || 5000);
 
-app.get('/', function (req, res) {
-  res.sendfile(__dirname + '/index.html');
-});
 
 io.sockets.on('connection', function (socket) {
   socket.on('disconnect', function(){
@@ -80,7 +84,7 @@ io.sockets.on('connection', function (socket) {
   socket.on('submitAnswer', function (data) {
     if (data.hit && players[data.hit].safe === true){
       //build out client support
-      socket.emit('attackedSafePlayer', [data.answer,data.answerId]);
+      socket.emit('attackedSafePlayer', data.answer);
       return;
     }
     if (data.answer && parseInt(data.answer) === parseInt(answers[data.answerId])){

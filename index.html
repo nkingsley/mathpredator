@@ -98,8 +98,8 @@
       $('.messageSpace').text('wrong');
     });
     socket.on('attackedSafePlayer', function(data){
-      $('input').text(data.answer);
-      $('messageSpace').text('rats... they\'re safe.  Pick someone else.');
+      $('input').text(data);
+      $('.messageSpace').text('rats... they\'re safe.  Pick someone else.');
     });
     var renderPlayers = function(){
       $('.players').html('');

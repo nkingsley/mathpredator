@@ -1,0 +1,25 @@
+<html>
+<head>
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body ng-app = "mathPredator">
+ <div ng-controller = "mainControl">
+   <div class = "message">{{message}}</div>
+   <div class = "score">SCORE: {{players[id].level}}</div>
+   <div class = "problem">{{problem}}</div>
+   <form ng-model = "workSpace" ng-submit = "sendAnswer()">
+     <input type = "text" ng-model = "answerInput" ng-disabled = "bitten" />
+     <input type = "submit" ng-disabled = "bitten" value = "Submit Answer" />
+   </form>
+   <div ng-repeat = "player in players">
+     <button ng-click = "attack(player.id)" ng-disabled = "!players[id].safe || player.safe || player.id === id || bitten || player.team === players[id].team" class = "tm{{player.team}}" ng-hide = "player.id === id">
+       ID:{{player.id}} Score: {{player.level}} 
+     </button>
+   </div>
+ </div>
+<script src = "https://ajax.googleapis.com/ajax/libs/angularjs/1.2.5/angular.min.js"></script>
+<script src = "app.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="ng-socket-io.js"></script>
+</body>
+</html>
