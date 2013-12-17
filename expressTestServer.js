@@ -10,7 +10,7 @@ var randInt = function(max){
   return Math.ceil(Math.random()*max);
 };
 var getProblem = function(level){
-  if (level >= 0){
+  if (level <= 4){
     level = 5;
   }
   var first = randInt(level);
@@ -28,7 +28,7 @@ var Player = function(id){
   this.id = id;
 };
 var Team = function(id){
-  this.players = [];
+  this.players = {};
   this.score = 0;
   this.id = id;
   this.safePlayers = 0;
@@ -42,44 +42,55 @@ app.get('/', function (req, res) {
 });
 
 io.sockets.on('connection', function (socket) {
-	socket.join(id++);
+  socket.on('disconnect', function(){
+    console.log('ID IS _____>>>>>' + socket.name);
+    var team = players[socket.name].team;
+    delete teams[team].players[socket.name];
+    io.sockets.emit('disconnect', [teams[0],teams[1],players[socket.name]]);
+    delete players[socket.name];
+  });
+	socket.join(++id);
+  socket.name = id;
   players[id] = new Player(id);
   var team;
   var otherTeam;
   //2 team only solution :(
 	if (teams[1].players.length > teams[0].players.length){
 	  team = teams[0].id;
-    teams[0].players.push(id);
+    teams[0].players[id] = id;
     otherTeam = teams[1].id;
 	} else {
 	  team = teams[1].id;
-    teams[1].players.push(id);
+    teams[1].players[id] = id;
     otherTeam = teams[0].id;
 	}
-  socket.emit('initialize', {id:id,team:team,otherTeam:otherTeam});
+  players[id].team = team;
+  socket.emit('initialize', {id:id,team:team,otherTeam:otherTeam,players:players});
   socket.join('team' + team);
-	io.sockets.emit('newConnect', [teams[0],teams[1]] );
+  //let all players have the current team status and new player object
+	io.sockets.emit('newConnect', [teams[0],teams[1],players[id]] );
   if (game){
     socket.emit('newProb', getProblem(0));
   }
-  if (teams[0].players.length > 1 && !game){
+  if (id > 4 && !game){
     game = true;
     newRound();
   }
   socket.on('submitAnswer', function (data) {
-    console.log('answer->' + data.answer + ' correct: ' + answers[data.answerId]);
     if (data.answer && parseInt(data.answer) === parseInt(answers[data.answerId])){
+      delete answers[data.answerId];
       players[data.id].level++;
       var team = data.team;
       teams[team].score++;
       var otherTeam = data.otherTeam;
+      io.sockets.emit('safe',data.id);
+      players[data.id].safe = true;
       //register a bite
       if (data.hit && players[data.hit].safe === false){
         io.sockets.emit('bite', {biter: data.id,bitten:data.hit});
         io.sockets.in(data.hit).emit('youwerebitten',data.id);
         players[data.hit].level--;
         players[data.hit].safe = true;
-        teams[otherTeam].safePlayers++;
         teams[otherTeam].score--;
       }
       if (teams[team].score === 10){
@@ -89,13 +100,15 @@ io.sockets.on('connection', function (socket) {
         io.sockets.in('team' + team).emit('gameOver',"WIN");
         io.sockets.in('team' + otherTeam).emit('gameOver',"LOSE");
         setTimeout(newRound,7000);
-      } else {
-        //let everyone know this player is safe for the round
-        io.sockets.emit('safe',data.id);
-        socket.emit('youaresafe');
-        players[data.id].safe = true;
       }
-      if (teams[0].safePlayers >= teams[0].players.length && teams[1].safePlayers >= teams[1].players.length){
+      var roundOver = true;
+      for (var id in players){
+        if (players[id].safe === false){
+          roundOver = false;
+          break;
+        }
+      }
+      if (roundOver){
         newRound();
       }
     } else {
@@ -104,30 +117,17 @@ io.sockets.on('connection', function (socket) {
   });
 
   socket.on('attack', function(data){
-    if (players[data].safe === true){
-      socket.emit('newProb', getProblem(players[player].level));
+    if (players[data.id].safe === true && players[data.attack].safe === false){
+      socket.emit('newProb', getProblem(players[data.id].level));
     }
   });
 });
 
 var newRound = function(){
-  console.log('newRound');
-  io.sockets.emit('newRound');
-  if (teams[0].players.length > teams[1].players.length){
-    var length = teams[0].players.length;
-  } else {
-    var length = teams[1].players.length;
-  }
-  for (var i = 0 ; i < length ; i++){
-    if (teams[0].players[i]){
-      var player = teams[0].players[i];
-      players[player].safe = false;
-      io.sockets.in(player).emit('newProb', getProblem(players[player].level));
-    }
-    if (teams[1].players[i]){
-      var player = teams[1].players[i];
-      players[player].safe = false;
-      io.sockets.in(player).emit('newProb', getProblem(players[player].level));
-    }
+  io.sockets.emit('newRound',[teams[0],teams[1],players]);
+  for (var id in players){
+    console.log('sending problem to->' + id);
+    players[id].safe = false;
+    io.sockets.in(id).emit('newProb', getProblem(players[id].level));
   }
 }

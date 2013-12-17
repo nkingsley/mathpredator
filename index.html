@@ -4,7 +4,10 @@
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <input type = "text" class = "answer" /><button class = "boom">Submit Answer</button>
+  <div class = "probSpace"></div>
+  <input type = "text" class = "answer" />
+  <button class = "boom">Submit Answer</button>
+  <div class = "players"> </div>
   <script>
     $(document).ready(function(){
       $('.boom').on('click',function(){
@@ -13,50 +16,87 @@
           team:team,
           otherTeam:otherTeam,
           answer: $('.answer').val(),
-          answerId: problem.id
+          answerId: problem.id,
+          hit: idToBite
         };
-        console.log(answer);
         socket.emit('submitAnswer',answer);
       });
     });
+    var bitten = false;
+    var players;
     var teams;
     var team;
     var otherTeam;
     var socket = io.connect('/');
     var id;
     var problem;
+    var idToBite = null;
     socket.on('initialize', function(data){
       id = data.id;
       team = data.team;
       otherTeam = data.otherTeam;
-    })
+      players = data.players;
+      renderPlayers();
+    });
+    socket.on('disconnect',function(data){
+      teams = [data[0],data[1]];
+      console.log(players);
+      delete players[data[2].id];
+      console.log(players);
+      renderPlayers(); 
+    });
     socket.on('safe', function (data) {
-      $(document.body).append(data);
+      players[data].safe = true;
+      players[data].level++;
+      renderPlayers();
     });
     socket.on('newConnect', function(data){
-      teams = data;
+      teams = [data[0],data[1]];
+      players[data[2].id] = data[2];
+      renderPlayers();
     });
     socket.on('gameOver', function(data){
-      $(document.body).append(data);
+      $('.probSpace').text(data);
     });
     socket.on('newProb', function(data){
-      $(document.body).append(data.problem);
+      $('.probSpace').text(data.problem);
       problem = data;
     });
+    socket.on('bite', function(data){
+      if (idToBite === data.bitten){
+        idToBite = null;
+      }
+      players[data.bitten].safe = true;
+      players[data.bitten].level--;
+      players[data.biter].level++;
+      renderPlayers();
+    });
     socket.on('youwerebitten', function(data){
+      bitten = true;
       $(document.body).append('youwerebitten' + data);
     });
     socket.on('newRound', function(){
-      $(document.body).append('newRound');
+      bitten = false;
+      $('.probSpace').text('');
+      renderPlayers();
     });
     socket.on('wrong', function(data){
-      $(document.body).append('wrong');
+      $('.messageSpace').text('wrong');
     });
-    socket.on('safe', function(data){
-      $(document.body).append('safe -> ' + data);
-    });
-    socket.on('youaresafe', function(){
-      $(document.body).append('youaresafe');
-    });
+    var renderPlayers = function(){
+      $('.players').html('');
+      for (var pid in players){
+        if (bitten || players[id].safe === false || players[pid].safe === true || players[pid].id === id){
+          var isOn = "disabled";
+        } else {
+          var isOn = "";
+        }
+        $('.players').append('<button data-id ="' + players[pid].id + '" ' + isOn + '>' + players[pid].id + '</button>');
+      }
+      $('.players').children().on('click',function(){
+        socket.emit('attack',{id:id,attack:$(this).attr('data-id')});
+        idToBite = $(this).attr('data-id');
+      });
+    };
   </script>
 </body>
