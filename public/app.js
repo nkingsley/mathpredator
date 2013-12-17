@@ -1,6 +1,14 @@
 angular.module('mathPredator', ['socket-io'])
 .controller('mainControl', function($scope, socket) {
+  $scope.color = ['blue','red'];
     // On connect, server sends player and team data.
+    setInterval(function(){
+      for (var id in $scope.players){
+        $scope.players[id].x = $scope.randInt(1500);
+        $scope.players[id].y = $scope.randInt(1500);
+      }
+      $scope.$apply();
+    },2000);
     socket.on('initialize', function(data) {
       $scope.id = data.id;
       $scope.team = data.team;
@@ -38,11 +46,14 @@ angular.module('mathPredator', ['socket-io'])
       }
       $scope.players[data.bitten].safe = true;
       $scope.players[data.bitten].level--;
-      $scope.players[data.biter].level++;
+      $scope.teams[$scope.players[data.bitten].team].score--;
+      if ($scope.id !== data.biter){
+        $scope.teams[$scope.players[data.biter].team].score++;
+      }
     }).bindTo($scope);
     socket.on('youwerebitten', function(data){
       $scope.bitten = true;
-      $scope.message = 'you were bitten by ' + data + '.  Get revenge soon!';
+      $scope.message = 'you were bitten by ' + $scope.players[data].name + '.  Get revenge soon!';
     }).bindTo($scope);
     socket.on('newRound', function(data){
       $scope.bitten = false;
@@ -52,8 +63,12 @@ angular.module('mathPredator', ['socket-io'])
       $scope.players = data[2];
     }).bindTo($scope);
     socket.on('wrong', function(data){
-      $scope.message = wrong;
+      $scope.message = 'wrong';
+      $scope.teams[$scope.team].score--;
     }).bindTo($scope);
+    socket.on('newName', function(data){
+      $scope.players[data.id] = data;
+    })
     socket.on('attackedSafePlayer', function(data){
       $scope.answerInput = data;
       $scope.message = 'rats... they\'re safe.  Pick someone else.';
@@ -63,6 +78,9 @@ angular.module('mathPredator', ['socket-io'])
       socket.emit('attack',{id:$scope.id,attack:id});
       $scope.idToBite = id;
     };
+    $scope.sendUserName = function(){
+      socket.emit('username',{name:$scope.username,id:$scope.id});
+    }
     $scope.sendAnswer = function(){
       var answer = {
         id:$scope.id,
@@ -74,5 +92,9 @@ angular.module('mathPredator', ['socket-io'])
       };
       socket.emit('submitAnswer',answer);
       $scope.answerInput = '';
+      $scope.teams[$scope.team].score++;
+    };
+    $scope.randInt = function(max){
+      return Math.ceil(Math.random()*max);
     };
 });

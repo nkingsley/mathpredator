@@ -7,12 +7,15 @@ app.get('/', function (req, res) {
   res.sendfile(__dirname + '/public/index.html');
 });
 app.use(express.static(__dirname + '/public'));
+server.listen(process.env.PORT || 5000);
 
 var id = 1;
 var boom = 0;
 var answers = {};
 var ansId = 1;
 var game = false;
+
+
 var randInt = function(max){
   return Math.ceil(Math.random()*max);
 };
@@ -20,6 +23,7 @@ var getProblem = function(level){
   if (level <= 4){
     level = 5;
   }
+  level = level*2;
   var first = randInt(level);
   var second = randInt(level);
   var answer = first * second;
@@ -33,17 +37,20 @@ var Player = function(id){
   this.level = 0;
   this.safe = false;
   this.id = id;
+  this.x = randInt(1500);
+  this.y = randInt(1500);
+  this.name = '';
 };
 var Team = function(id){
   this.players = {};
   this.score = 0;
   this.id = id;
-  this.safePlayers = 0;
   this.size = 0;
 };
+
+
 var teams = [new Team(0), new Team(1)];
 var players = {};
-server.listen(process.env.PORT || 5000);
 
 
 io.sockets.on('connection', function (socket) {
@@ -109,7 +116,7 @@ io.sockets.on('connection', function (socket) {
         teams[otherTeam].score = 0;
         io.sockets.in('team' + team).emit('gameOver',"WIN");
         io.sockets.in('team' + otherTeam).emit('gameOver',"LOSE");
-        setTimeout(newRound,7000);
+        setTimeout(newRound,4000);
       }
       var roundOver = true;
       for (var id in players){
@@ -125,7 +132,10 @@ io.sockets.on('connection', function (socket) {
       socket.emit('wrong');
     }
   });
-
+  socket.on('username',function(data){
+    players[data.id].name = data.name;
+    io.sockets.emit('newName',players[data.id]);
+  })
   socket.on('attack', function(data){
     if (players[data.id].safe === true && players[data.attack].safe === false){
       socket.emit('newProb', getProblem(players[data.id].level));
