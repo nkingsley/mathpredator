@@ -39,6 +39,8 @@ var Player = function(id){
   this.id = id;
   this.x = randInt(1500);
   this.y = randInt(1500);
+  this.x1 = this.x;
+  this.y2 = this.y;
   this.name = '';
 };
 var Team = function(id){
@@ -110,7 +112,7 @@ io.sockets.on('connection', function (socket) {
         players[data.hit].safe = true;
         teams[otherTeam].score--;
       }
-      if (teams[team].score === 10){
+      if (teams[team].score === 20){
         //game over
         teams[team].score = 0;
         teams[otherTeam].score = 0;

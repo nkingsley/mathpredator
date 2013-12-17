@@ -4,6 +4,8 @@ angular.module('mathPredator', ['socket-io'])
     // On connect, server sends player and team data.
     setInterval(function(){
       for (var id in $scope.players){
+        $scope.players[id].x1 = $scope.players[id].x;
+        $scope.players[id].y1 = $scope.players[id].y;
         $scope.players[id].x = $scope.randInt(1500);
         $scope.players[id].y = $scope.randInt(1500);
       }
