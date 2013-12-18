@@ -26,10 +26,31 @@ var getProblem = function(level){
   level = level*2;
   var first = randInt(level);
   var second = randInt(level);
-  var answer = first * second;
+  var oper = randInt(3);
+  var answer;
+  var operStrs = {
+    1 : ' X ',
+    2 : ' + ',
+    3 : ' - ',
+    4 : ' / '
+  }
+  switch (oper){
+    case 1:
+    answer = first * second;
+    break;
+    case 2:
+    answer = first + second;
+    break;
+    case 3:
+    answer = first - second;
+    break;
+    case 4:
+    answer = first / second;
+    break;
+  }
   answers[++ansId] = answer;
   return {
-    problem: first + " x " + second + " = ",
+    problem: first + operStrs[oper] + second + " = ",
     id:ansId
   };
 };
@@ -42,6 +63,7 @@ var Player = function(id){
   this.x1 = this.x;
   this.y2 = this.y;
   this.name = '';
+  this.zombie = randInt(3);
 };
 var Team = function(id){
   this.players = {};
