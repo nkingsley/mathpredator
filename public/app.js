@@ -11,7 +11,7 @@ angular.module('mathPredator', ['socket-io'])
   setInterval(function(){
     $scope.playerArray = [];
     for (var id in $scope.players){
-      $scope.playerArray.push([$scope.randInt(1500),$scope.randInt(1500)]);
+      $scope.playerArray.push([$scope.randInt(3000) + 500,$scope.randInt(1500)]);
     }
     d3.select('svg').selectAll('ellipse')
     .data($scope.playerArray)
