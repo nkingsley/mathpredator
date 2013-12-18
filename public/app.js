@@ -1,4 +1,4 @@
-angular.module('mathPredator', ['socket-io'])
+angular.module('mathPredator', ['socket-io','ngTouch'])
 .controller('mainControl', function($scope, $http, socket) {
   $scope.color = ['blue','red'];
   $scope.safetyColors = {false:'yellow',true:'black'};
